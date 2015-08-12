@@ -1,16 +1,16 @@
 package ua.bmexp.tconversion;
 
 
-public class tNumber {
+public class tNumber implements Cloneable {
     private static double H = 0.002;
-    private static int disc = 12;
+    private static int discCount = 12;
 
     protected final double pi = Math.PI;
     protected double[] discrets;
 
     private void initialize() {
-        discrets = new double[disc];
-        for (int i = 0; i < disc; i++) {
+        discrets = new double[discCount];
+        for (int i = 0; i < discCount; i++) {
             discrets[i] = 0;
         }
     }
@@ -37,13 +37,14 @@ public class tNumber {
     }
 
     public static long factorial(int f) throws Exception {
-        if (f < 0) throw new NegativeArgument(f);            
+        if (f < 0)
+            throw new NegativeArgument(f);
         return ((f == 0) ? 1 : f * factorial(f - 1));
     }
 
     public tNumber add(tNumber x) {
         tNumber res = new tNumber();
-        for (int i = 0; i < disc; i++) {
+        for (int i = 0; i < discCount; i++) {
             res.discrets[i] = discrets[i] + x.discrets[i];
         }
         return res;
@@ -51,7 +52,7 @@ public class tNumber {
 
     public tNumber add(double x) {
         tNumber res = new tNumber();
-        for (int i = 0; i < disc; i++) {
+        for (int i = 0; i < discCount; i++) {
             res.discrets[i] = discrets[i] + x;
         }
         return res;
@@ -59,7 +60,7 @@ public class tNumber {
 
     public tNumber sub(tNumber x) {
         tNumber res = new tNumber();
-        for (int i = 0; i < disc; i++) {
+        for (int i = 0; i < discCount; i++) {
             res.discrets[i] = discrets[i] - x.discrets[i];
         }
         return res;
@@ -67,7 +68,7 @@ public class tNumber {
 
     public tNumber sub(double x) {
         tNumber res = new tNumber();
-        for (int i = 0; i < disc; i++) {
+        for (int i = 0; i < discCount; i++) {
             res.discrets[i] = discrets[i] - x;
         }
         return res;
@@ -75,15 +76,27 @@ public class tNumber {
 
     public tNumber mult(double x) {
         tNumber res = new tNumber();
-        for (int i = 0; i < disc; i++) {
+        for (int i = 0; i < discCount; i++) {
             res.discrets[i] = discrets[i] * x;
         }
         return res;
     }
 
+    public tNumber copy() {
+        tNumber X = new tNumber();
+        for (int i = 0; i < discCount; i++) {
+            X.set(i, discrets[i]);
+        }
+        return X;
+    }
+    
+    public Object clone() {
+        return this.copy();
+    }
+
     public tNumber mult(tNumber x) {
         tNumber res = new tNumber();
-        for (int k = 0; k < disc; k++) {
+        for (int k = 0; k < discCount; k++) {
             for (int l = 0; l <= k; l++) {
                 res.discrets[k] += discrets[l] * x.discrets[k - l];
             }
@@ -91,21 +104,40 @@ public class tNumber {
         return res;
     }
 
-    public tNumber div(double x) throws Exception {
-        if (x == 0) throw new ZeroDiv();  
+    public tNumber pow(int n) {
+        if (n < 0)
+            throw new IllegalArgumentException("Illegal argument");
         tNumber res = new tNumber();
-        for (int i = 0; i < disc; i++) {
+        if (n == 0) {
+            res.set(0, 1);
+            return res;
+        }
+        if (n == 1) {
+            return this;
+        }
+        res = (tNumber) this.clone();
+        for (int i = 2; i <= n; i++) {
+            res = res.mult(this);
+        }
+        return res;
+    }
+
+    public tNumber div(double x) throws ZeroDiv {
+        if (x == 0)
+            throw new ZeroDiv();
+        tNumber res = new tNumber();
+        for (int i = 0; i < discCount; i++) {
             res.discrets[i] = discrets[i] / x;
         }
         return res;
     }
-    
-    public tNumber div(tNumber x) throws Exception {
+
+    public tNumber div(tNumber x) throws ZeroDiv {
         if (x.discrets[0] == 0)
             throw new ZeroDiv();
         tNumber res = new tNumber();
-        double[] dis = new double[disc];
-        for (int k = 0; k < disc; k++) {
+        double[] dis = new double[discCount];
+        for (int k = 0; k < discCount; k++) {
             for (int l = 0; l <= k - 1; l++) {
                 dis[k] += res.discrets[l] * x.discrets[k - l];
             }
@@ -113,51 +145,48 @@ public class tNumber {
         }
         return res;
     }
-    
-   public tNumber diff(int i) throws Exception {
-        if (i < 0) throw new IllegalArgumentException("Differential cannot be negative");
+
+    public tNumber diff(int i) throws Exception {
+        if (i < 0)
+            throw new IllegalArgumentException("Differential cannot be negative");
         tNumber res = new tNumber();
-        for(int k = 0; k < disc-i; k++){
-            res.set(k, factorial(k+i)*this.discrets[k+i]/(factorial(k)*Math.pow(H, i)));
+        for (int k = 0; k < discCount - i; k++) {
+            res.set(k, factorial(k + i) * this.discrets[k + i] / (factorial(k) * Math.pow(H, i)));
         }
         return res;
     }
-   
-   public tNumber integral(double StartCondition) throws Exception {
-       tNumber res = new tNumber();
-       res.set(0,StartCondition);
-       for(int k = 1; k < disc; k++){
-           res.set(k, this.discrets[k-1]*H/k);
-       }
-       return res;
-   }
+
+    public tNumber integral(double StartCondition) throws Exception {
+        tNumber res = new tNumber();
+        res.set(0, StartCondition);
+        for (int k = 1; k < discCount; k++) {
+            res.set(k, this.discrets[k - 1] * H / k);
+        }
+        return res;
+    }
 
     public double getOriginal(double t) {
         if (t == 0)
             return discrets[0];
         double res = 0;
-        for (int i = 0; i < disc; i++) {
+        for (int i = 0; i < discCount; i++) {
             res += Math.pow(t / H, i) * discrets[i];
         }
         return res;
     }
 
     public void printNumber() {
-        for (int i = 0; i < disc; i++) {
+        for (int i = 0; i < discCount; i++) {
             System.out.println("X[" + i + "] = " + discrets[i]);
         }
         System.out.println();
     }
-    
+
     public void printOriginal() {
-        for(double t = 0; t <= 5*H/2; t += H/10) {
-        System.out.println("x("+String.format( "%.7f", t )+") = "+getOriginal(t));
+        for (double t = 0; t <= 5 * H / 2; t += H / 10) {
+            System.out.println("x(" + String.format("%.7f", t) + ") = " + getOriginal(t));
         }
         System.out.println();
-    }
-
-    public double getPi() {
-        return pi;
     }
 
     public static void setH(double H) {
@@ -168,12 +197,12 @@ public class tNumber {
         return H;
     }
 
-    public static void setDisc(int disc) {
-        tNumber.disc = disc;
+    public static void setDiscCount(int disc) {
+        tNumber.discCount = disc;
     }
 
-    public static int getDisc() {
-        return disc;
+    public static int getDiscCount() {
+        return discCount;
     }
 
     public void set(int i, double s) {
